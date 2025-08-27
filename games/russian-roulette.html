@@ -160,6 +160,23 @@
   display: none; /* sembunyi awal */
   pointer-events: none;
 }
+/* Styling popup */
+.popup {
+  display: none; 
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+}
+.popup-content {
+  background: #ffffff5d;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  width: 300px;
+  margin: 15% auto;
+}
+
 
   </style>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -185,7 +202,7 @@
   </div>
   <button onclick="toggleMusic()">🎵 Play / Pause Musik</button>
 
-  <button onclick="startGame()">▶️ Main Sekarang</button>
+  <button onclick="openNamePopup()">Masuk Game</button>
 </div>
 <!-- Musik di Homepage -->
 <audio id="bgMusic" loop>
@@ -221,6 +238,16 @@
   <div id="message">Klik "Putar Silinder" dulu!</div>
 </div>
 
+<!-- Popup Modal -->
+<div id="namePopup" class="popup">
+  <div class="popup-content">
+    <h2>📝 Masukkan Nama Pemain</h2>
+    <input type="text" id="player1Input" placeholder="Nama Player 1"><br><br>
+    <input type="text" id="player2Input" placeholder="Nama Player 2"><br><br>
+    <button onclick="saveNames()">OK</button>
+  </div>
+</div>
+
 
   <!-- POPUP WINNER -->
 <div id="gameOverModal">
@@ -248,12 +275,56 @@ function toggleMusic() {
   let bulletPosition = null;
 let currentChamber = 0;
 let gameOver = false;
+let player1 = "Player 1";
+let player2 = "Player 2";
 let currentPlayer = 1;
+function openNamePopup() {
+  document.getElementById("namePopup").style.display = "block";
+}
 
-    function startGame() {
-      document.getElementById("homepage").style.display = "none";
-      document.getElementById("gamepage").style.display = "flex";
-    }
+function saveNames() {
+  let p1 = document.getElementById("player1Input").value.trim();
+  let p2 = document.getElementById("player2Input").value.trim();
+
+  if (p1 === "" || p2 === "") {
+    alert("⚠️ Nama tidak boleh kosong!");
+    return;
+  }
+
+  player1 = p1;
+  player2 = p2;
+
+  // tutup popup
+  document.getElementById("namePopup").style.display = "none";
+
+  // masuk ke game
+  document.getElementById("homepage").style.display = "none";
+  document.getElementById("game").style.display = "block";
+  document.getElementById("turnInfo").innerText = "🎮 Giliran: " + player1;
+}
+
+
+function startGame() {
+  // popup input nama
+  let p1 = prompt("📝 Masukkan nama Player 1:");
+  let p2 = prompt("📝 Masukkan nama Player 2:");
+
+  // cek kalau kosong → ulangi
+  if (!p1 || !p2) {
+    alert("⚠️ Nama tidak boleh kosong!");
+    return;
+  }
+
+  player1 = p1;
+  player2 = p2;
+
+  // sembunyikan homepage, tampilkan game
+  document.getElementById("homepage").style.display = "none";
+  document.getElementById("game").style.display = "block";
+
+  document.getElementById("turnInfo").innerText = "🎮 Giliran: " + player1;
+  document.getElementById("message").innerText = "Klik 'Putar Silinder' untuk mulai!";
+}
 
 function spin() {
   if (gameOver) return;
@@ -273,24 +344,23 @@ function shoot() {
   }
   if (gameOver) return;
 
-  showFlash(); // efek flash (tidak pengaruh ke logika)
+  showFlash();
 
   console.log("DEBUG >>> currentChamber:", currentChamber, " bulletPosition:", bulletPosition);
 
-  // cek apakah peluru ada di chamber ini
   if (currentChamber === bulletPosition) {
-    // Player ini kena!
+    // peluru keluar!
     let winner = currentPlayer === 1 ? 2 : 1;
     document.getElementById("message").innerText = "💥 Dor! Player " + currentPlayer + " kalah!";
     document.getElementById("turnInfo").innerText = "🏆 Player " + winner + " MENANG!";
     gameOver = true;
     showWinner(winner);
   } else {
-    // Masih kosong
+    // peluru kosong
     document.getElementById("message").innerText = "😮 Player " + currentPlayer + " selamat!";
-    currentChamber++; // pindah ke chamber berikutnya
+    currentChamber++;
 
-    // kalau sudah 6 kali tembak tanpa keluar peluru
+    // jika sudah 6 kali tembak & peluru belum keluar = seri
     if (currentChamber >= 6) {
       document.getElementById("message").innerText = "😎 Semua selamat! Peluru tidak keluar!";
       document.getElementById("turnInfo").innerText = "🎉 Seri!";
