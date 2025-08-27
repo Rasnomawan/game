@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GameHub Sederhana</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#12182a; --muted:#a9b1c6; --text:#e6eaf5; --accent:#6ea8fe; --ring:#8eb3ff;
+      --shadow:0 6px 20px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background:linear-gradient(180deg, #0b1020, #0a0e1a); color:var(--text)}
+    .container{max-width:1080px; margin:0 auto; padding:24px}
+    header{display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    .brand{display:flex; gap:12px; align-items:center}
+    .logo{width:40px; height:40px; display:grid; place-items:center; border-radius:12px; background:radial-gradient(80% 80% at 30% 20%, #6ea8fe, #7b5bff); box-shadow:var(--shadow)}
+    .brand h1{font-size:20px; margin:0}
+    .toolbar{display:flex; gap:8px; flex-wrap:wrap}
+    .input, select{background:#0e1426; border:1px solid #1c2547; color:var(--text); padding:10px 12px; border-radius:12px; outline:none}
+    .input:focus, select:focus{border-color:var(--ring); box-shadow:0 0 0 3px rgba(110,168,254,.15)}
+    .btn{background:#1a2447; color:var(--text); border:1px solid #25315c; padding:10px 12px; border-radius:12px; cursor:pointer}
+    .btn:hover{background:#1f2b56}
+    .tags{display:flex; gap:8px; flex-wrap:wrap}
+    .tag{font-size:12px; padding:6px 10px; border:1px solid #283665; background:#121a37; border-radius:999px; cursor:pointer}
+    .tag.active{background:#223a7a; border-color:#3656a6}
+    .grid{margin-top:16px; display:grid; grid-template-columns:repeat(12,1fr); gap:16px}
+    @media (max-width: 1024px){ .grid{grid-template-columns:repeat(8,1fr)} }
+    @media (max-width: 640px){ .grid{grid-template-columns:repeat(4,1fr)} }
+    .card{grid-column:span 4; background:var(--card); border:1px solid #1b2343; border-radius:18px; padding:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; transition:transform .15s ease}
+    .card:hover{transform:translateY(-3px)}
+    .card-head{display:flex; gap:10px; align-items:center}
+    .emoji{font-size:26px}
+    .title{font-weight:700}
+    .desc{color:var(--muted); font-size:14px; line-height:1.4}
+    .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .badge{font-size:12px; padding:4px 8px; border-radius:999px; background:#1a2447; border:1px solid #283665}
+    .actions{margin-top:auto; display:flex; gap:8px}
+    .play{background:linear-gradient(180deg,#6ea8fe,#7b5bff); color:#0b1020; border:none}
+
+    dialog{width:min(920px, 92vw); border:none; border-radius:18px; padding:0; overflow:hidden; background:#0f152b}
+    dialog::backdrop{background:rgba(3,6,16,.6)}
+    .modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid #1b2343; background:#121a33}
+    .modal-body{display:grid; grid-template-columns: 1.1fr .9fr; gap:0; min-height:420px}
+    @media (max-width: 860px){ .modal-body{display:block} }
+    .frame{border:0; width:100%; height:100%; min-height:420px; background:#000}
+    .panel{padding:18px; display:flex; flex-direction:column; gap:12px}
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    .close{background:#1a2447; border:1px solid #2a3b75; color:var(--text); padding:10px 12px; border-radius:10px; cursor:pointer}
+    .empty{opacity:.7; font-style:italic}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">🎮</div>
+        <h1>GameHub</h1>
+      </div>
+      <div class="toolbar">
+        <input id="search" class="input" placeholder="Cari game… (judul/desk/tag)" />
+        <select id="sort">
+          <option value="new">Terbaru</option>
+          <option value="az">A → Z</option>
+          <option value="difficulty">Tingkat Kesulitan</option>
+        </select>
+        <button id="btnClear" class="btn" title="Reset filter">Reset</button>
+      </div>
+    </header>
+
+    <section style="margin-top:14px">
+      <div class="tags" id="tags"></div>
+    </section>
+
+    <section class="grid" id="grid"></section>
+  </div>
+
+  <dialog id="viewer">
+    <div class="modal-head">
+      <strong id="vTitle">Judul Game</strong>
+      <div class="row">
+        <button class="close" id="openNew">Buka Tab Baru</button>
+        <button class="close" id="close">Tutup</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <iframe id="vFrame" class="frame" src="about:blank" title="Game"></iframe>
+      <div class="panel">
+        <div id="vDesc" class="muted">Deskripsi</div>
+        <div class="row" id="vBadges"></div>
+        <div class="row">
+          <span class="badge" id="vDifficulty">Kesulitan: -</span>
+          <span class="badge" id="vAdded">Ditambahkan: -</span>
+        </div>
+        <div class="muted" id="vNote"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    // ====== DATA GAME (ganti URL sesuai folder/proyek kamu) ======
+    const GAMES = [
+      {
+        id: "ww2-strategy",
+        title: "WW2 Strategy",
+        description:
+          "Game strategi Perang Dunia II. Atur diplomasi, perjanjian, dan serangan antar negara.",
+        tags: ["Strategi", "Sejarah"],
+        difficulty: "Menengah",
+        url: "./games/ww2/index.html",
+        emoji: "🪖",
+        addedAt: "2025-08-01",
+      },
+      {
+        id: "russian-roulette",
+        title: "Russian Roulette",
+        description:
+          "Animasi revolver Magnum: isi peluru dan putar silinder saat reload (tanpa menampilkan posisi peluru).",
+        tags: ["Arcade", "Simulasi"],
+        difficulty: "Mudah",
+        url: "./games/russian-roulette.html",
+        emoji: "🎯",
+        addedAt: "2025-08-06",
+      },
+      {
+        id: "rps",
+        title: "Suit RPS",
+        description: "Suit sederhana: batu, kertas, gunting.",
+        tags: ["Casual"],
+        difficulty: "Mudah",
+        url: "",
+        emoji: "✊",
+        addedAt: "2025-07-20",
+      },
+    ];
+
+    // ====== STATE & HELPERS ======
+    const state = {
+      q: "",
+      tag: null,
+      sort: "new",
+    };
+
+    const $ = (sel) => document.querySelector(sel);
+    const el = (tag, attrs = {}, ...children) => {
+      const n = document.createElement(tag);
+      Object.entries(attrs).forEach(([k,v]) => {
+        if(k === "class") n.className = v; else if (k === "html") n.innerHTML = v; else n.setAttribute(k, v);
+      });
+      for(const c of children){
+        if(c == null) continue;
+        n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+      }
+      return n;
+    };
+
+    const uniq = (arr) => [...new Set(arr)];
+
+    function filtered(){
+      let list = [...GAMES];
+      // search
+      if(state.q){
+        const q = state.q.toLowerCase();
+        list = list.filter(g =>
+          g.title.toLowerCase().includes(q)
+          || g.description.toLowerCase().includes(q)
+          || g.tags.join(" ").toLowerCase().includes(q)
+        );
+      }
+      // tag
+      if(state.tag){
+        list = list.filter(g => g.tags.includes(state.tag));
+      }
+      // sort
+      if(state.sort === "az"){ list.sort((a,b)=> a.title.localeCompare(b.title)); }
+      else if(state.sort === "difficulty"){ const order = {"Mudah":0, "Menengah":1, "Sulit":2}; list.sort((a,b)=> (order[a.difficulty]??9)-(order[b.difficulty]??9) || a.title.localeCompare(b.title)); }
+      else { list.sort((a,b)=> new Date(b.addedAt)-new Date(a.addedAt)); }
+      return list;
+    }
+
+    // ====== RENDER TAGS ======
+    function renderTags(){
+      const box = $("#tags");
+      box.innerHTML = "";
+      const allTags = uniq(GAMES.flatMap(g=>g.tags));
+      box.appendChild(tagChip("Semua", null));
+      for(const t of allTags){ box.appendChild(tagChip(t, t)); }
+    }
+    function tagChip(label, value){
+      const chip = el("button", {class:"tag"}, label);
+      if(state.tag === value) chip.classList.add("active");
+      chip.addEventListener("click", ()=>{ state.tag = value; renderTags(); renderGrid(); });
+      return chip;
+    }
+
+    // ====== RENDER GRID ======
+    function renderGrid(){
+      const grid = $("#grid");
+      grid.innerHTML = "";
+      const list = filtered();
+      if(list.length === 0){
+        grid.appendChild(el("div", {class:"card empty", style:"grid-column:span 12"}, "Tidak ada game yang cocok."));
+        return;
+      }
+      for(const g of list){ grid.appendChild(card(g)); }
+    }
+
+    function card(g){
+      return el("article", {class:"card"},
+        el("div", {class:"card-head"},
+          el("div", {class:"emoji", title:g.title}, g.emoji||"🎮"),
+          el("div", {},
+            el("div", {class:"title"}, g.title),
+            el("div", {class:"desc"}, g.description)
+          )
+        ),
+        el("div", {class:"meta"},
+          ...g.tags.map(t=> el("span", {class:"badge"}, t)),
+          el("span", {class:"badge"}, `Kesulitan: ${g.difficulty}`)
+        ),
+        el("div", {class:"actions"},
+          playBtn(g),
+          el("button", {class:"btn", title:"Detail", onclick:()=>openViewer(g)}, "Detail")
+        )
+      );
+    }
+
+    function playBtn(g){
+      const b = el("button", {class:"btn play"}, "Mainkan");
+      if(!g.url){
+        b.disabled = true; b.textContent = "Belum Tersedia"; b.style.opacity = .7; b.title = "URL game belum diisi";
+      } else {
+        b.addEventListener("click", ()=> openViewer(g, true));
+      }
+      return b;
+    }
+
+    // ====== VIEWER (dialog) ======
+    const dlg = $("#viewer");
+    function openViewer(g, autoPlay=false){
+      $("#vTitle").textContent = g.title;
+      $("#vDesc").textContent = g.description;
+      $("#vBadges").innerHTML = "";
+      g.tags.forEach(t=> $("#vBadges").appendChild(el("span", {class:"badge"}, t)));
+      $("#vDifficulty").textContent = `Kesulitan: ${g.difficulty}`;
+      $("#vAdded").textContent = `Ditambahkan: ${g.addedAt}`;
+      $("#vNote").textContent = g.url ? "Jika game tidak tampil, coba klik 'Buka Tab Baru'." : "URL game belum diisi.";
+      $("#openNew").onclick = ()=> g.url && window.open(g.url, "_blank");
+      $("#vFrame").src = g.url || "about:blank";
+      if(typeof dlg.showModal === "function"){ dlg.showModal(); }
+      else { alert("Browser kamu tidak mendukung <dialog>. Game akan dibuka di tab baru."); if(g.url) window.open(g.url, "_blank"); }
+    }
+    $("#close").addEventListener("click", ()=>{ $("#vFrame").src = "about:blank"; dlg.close(); });
+
+    // ====== INIT UI ======
+    $("#search").addEventListener("input", (e)=>{ state.q = e.target.value.trim(); renderGrid(); });
+    $("#sort").addEventListener("change", (e)=>{ state.sort = e.target.value; renderGrid(); });
+    $("#btnClear").addEventListener("click", ()=>{ state.q = ""; state.tag = null; state.sort = "new"; $("#search").value = ""; $("#sort").value = "new"; renderTags(); renderGrid(); });
+
+    renderTags();
+    renderGrid();
+  </script>
+</body>
+</html>

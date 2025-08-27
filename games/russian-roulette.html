@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Russian Roulette</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: #eee;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+   /* Halaman Awal */
+#homepage {
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  /* ini bisa kamu ubah wallpapernya */
+  background-image: url("https://wallpapercave.com/wp/wp2561633.jpg");
+  background-size: cover;
+  background-position: center;
+}
+#homepage h1 {
+  font-size: 40px;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 5px black; /* biar teks tetap jelas */
+}
+#homepage p {
+  font-size: 18px;
+  margin-bottom: 30px;
+  text-shadow: 1px 1px 3px black;
+}
+#homepage button {
+  padding: 12px 30px;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: rgba(0,0,0,0.6); /* semi transparan */
+  color: white;
+}
+#homepage button:hover {
+  background: rgba(0,0,0,0.8);
+}
+#info {
+  background: rgba(0,0,0,0.5);
+  padding: 15px 25px;
+  margin: 20px auto;
+  border-radius: 10px;
+  max-width: 500px;
+  text-align: left;
+}
+#info h2 {
+  margin-bottom: 10px;
+  font-size: 22px;
+  text-align: center;
+}
+#info ul {
+  list-style: none;
+  padding: 0;
+}
+#info ul li {
+  margin: 6px 0;
+}
+
+
+
+    /* Halaman Game */
+    #gamepage {
+      display: none; /* sembunyi dulu */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+    }
+    .gun {
+      width: 250px;
+      margin: 20px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin: 20px;
+    }
+    .controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #444;
+      color: white;
+    }
+    .controls button:hover {
+      background: #666;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    /* Popup Game Over */
+    #gameOverModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    #gameOverContent {
+      background: #333;
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    #gameOverContent h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+    #gameOverContent button {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #555;
+      color: white;
+      font-size: 16px;
+    }
+    #gameOverContent button:hover {
+      background: #777;
+    }
+    /* gun image */
+    .gun-container {
+  position: relative;
+  display: inline-block;
+}
+#muzzleFlash {
+  position: absolute;
+  top: 20%;   /* atur sesuai posisi moncong senjata */
+  left: 80%;  /* atur biar pas dengan gambar revolver */
+  width: 120px;
+  display: none; /* sembunyi awal */
+  pointer-events: none;
+}
+
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+</head>
+<body>
+  
+ <!-- HOMEPAGE -->
+<div id="homepage">
+  <h1>🎲 Russian Roulette</h1>
+  <p>Game klasik penuh ketegangan! Putar silinder, tarik pelatuk, dan lihat apakah kamu selamat.</p>
+  
+  <!-- INFO GAME -->
+  <div id="info">
+    <h2>ℹ️ Info Permainan</h2>
+    <ul>
+      <li>Revolver berisi 6 silinder, hanya 1 peluru.</li>
+      <li>Klik <b>Putar Silinder</b> untuk mengacak posisi peluru.</li>
+      <li>Klik <b>Tembak</b> untuk mencoba keberuntunganmu.</li>
+      <li>Jika selamat, bisa lanjut menembak lagi.</li>
+      <li>Jika kena peluru → <b>Game Over</b>.</li>
+    </ul>
+  </div>
+  <button onclick="toggleMusic()">🎵 Play / Pause Musik</button>
+
+  <button onclick="startGame()">▶️ Main Sekarang</button>
+</div>
+<!-- Musik di Homepage -->
+<audio id="bgMusic" loop>
+  <source src="musik_homepage.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Efek Suara di Game -->
+<audio id="shootSound">
+  <source src="shoot.mp3" type="audio/mpeg">
+</audio>
+<audio id="spinSound">
+  <source src="spin.mp3" type="audio/mpeg">
+</audio>
+
+
+  
+  <!-- GAMEPAGE -->
+  <div id="gamepage">
+  <h1>🎲 Russian Roulette</h1>
+  <p id="turnInfo">🎮 Giliran: Player 1</p>
+  
+  <div class="gun-container">
+  <img src="../images/revolver.png" alt="Revolver" class="gun">
+  <img id="muzzleFlash" src="../images/revolver-shoot.png" alt="Flash">
+</div>
+
+  
+  <div class="controls">
+    <button id="spinBtn" onclick="spin()">🔄 Putar Silinder</button>
+    <button id="shootBtn" onclick="shoot()">🔫 Tembak</button>
+  </div>
+  
+  <div id="message">Klik "Putar Silinder" dulu!</div>
+</div>
+
+
+  <!-- POPUP WINNER -->
+<div id="gameOverModal">
+  <div id="gameOverContent">
+    <h2 id="winnerText">🏆 Pemenang!</h2>
+    <p>Apakah ingin main lagi?</p>
+    <button onclick="resetGame(); closeModal()">🔄 Main Lagi</button>
+    <button onclick="exitGame()">❌ Keluar</button>
+  </div>
+</div>
+
+
+  <script>
+    const bgMusic = document.getElementById("bgMusic");
+const shootSound = document.getElementById("shootSound");
+const spinSound = document.getElementById("spinSound");
+
+function toggleMusic() {
+  if (bgMusic.paused) {
+    bgMusic.play();
+  } else {
+    bgMusic.pause();
+  }
+}
+  let bulletPosition = null;
+let currentChamber = 0;
+let gameOver = false;
+let currentPlayer = 1;
+
+    function startGame() {
+      document.getElementById("homepage").style.display = "none";
+      document.getElementById("gamepage").style.display = "flex";
+    }
+
+function spin() {
+  if (gameOver) return;
+  bulletPosition = Math.floor(Math.random() * 6); // acak posisi peluru 0–5
+  currentChamber = 0; // mulai dari chamber 0
+  currentPlayer = 1;  // giliran player 1 dulu
+  gameOver = false;
+
+  document.getElementById("turnInfo").innerText = "🎮 Giliran: Player " + currentPlayer;
+  document.getElementById("message").innerText = "🔄 Silinder diputar! Player 1 siap menembak!";
+}
+
+function shoot() {
+  if (bulletPosition === null) {
+    document.getElementById("message").innerText = "⚠️ Putar silinder dulu!";
+    return;
+  }
+  if (gameOver) return;
+
+  showFlash(); // efek flash (tidak pengaruh ke logika)
+
+  console.log("DEBUG >>> currentChamber:", currentChamber, " bulletPosition:", bulletPosition);
+
+  // cek apakah peluru ada di chamber ini
+  if (currentChamber === bulletPosition) {
+    // Player ini kena!
+    let winner = currentPlayer === 1 ? 2 : 1;
+    document.getElementById("message").innerText = "💥 Dor! Player " + currentPlayer + " kalah!";
+    document.getElementById("turnInfo").innerText = "🏆 Player " + winner + " MENANG!";
+    gameOver = true;
+    showWinner(winner);
+  } else {
+    // Masih kosong
+    document.getElementById("message").innerText = "😮 Player " + currentPlayer + " selamat!";
+    currentChamber++; // pindah ke chamber berikutnya
+
+    // kalau sudah 6 kali tembak tanpa keluar peluru
+    if (currentChamber >= 6) {
+      document.getElementById("message").innerText = "😎 Semua selamat! Peluru tidak keluar!";
+      document.getElementById("turnInfo").innerText = "🎉 Seri!";
+      gameOver = true;
+      showWinner("Tidak ada");
+      return;
+    }
+
+    // ganti giliran
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    document.getElementById("turnInfo").innerText = "🎮 Giliran: Player " + currentPlayer;
+  }
+}
+
+function showWinner(winner) {
+  document.getElementById("winnerText").innerText = "🏆 Player " + winner + " MENANG!";
+  document.getElementById("gameOverModal").style.display = "flex";
+
+  // Jalankan confetti 🎉
+  confetti({
+    particleCount: 150,
+    spread: 70,
+    origin: { y: 0.6 }
+  });
+}
+function showFlash() {
+  let flash = document.getElementById("muzzleFlash");
+  flash.style.display = "block";
+  setTimeout(() => {
+    flash.style.display = "none";
+  }, 200); // 0.2 detik
+}
+
+
+
+
+
+    function resetGame() {
+      bulletPosition = null;
+      currentChamber = 0;
+      gameOver = false;
+      document.getElementById("message").innerText = "Klik 'Putar Silinder' dulu!";
+      enableButtons();
+    }
+
+    function disableButtons() {
+      document.getElementById("spinBtn").disabled = true;
+      document.getElementById("shootBtn").disabled = true;
+    }
+
+    function enableButtons() {
+      document.getElementById("spinBtn").disabled = false;
+      document.getElementById("shootBtn").disabled = false;
+    }
+
+    function showModal() {
+      document.getElementById("gameOverModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("gameOverModal").style.display = "none";
+    }
+
+    function exitGame() {
+      document.getElementById("gamepage").style.display = "none";
+      document.getElementById("homepage").style.display = "block";
+      document.getElementById("message").innerText = "Klik 'Putar Silinder' dulu!";
+      disableButtons();
+      closeModal();
+    }
+  </script>
+</body>
+</html>
